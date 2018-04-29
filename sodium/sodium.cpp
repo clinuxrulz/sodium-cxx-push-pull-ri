@@ -17,16 +17,21 @@ namespace sodium {
         Lazy(F k): k(k) {}
 
         A operator()() {
-            return k();
+            if (!value_op) {
+                value_op = k();
+            }
+            return *value_op;
         }
 
-        template <typename B, typename F>
-        Lazy<B> map(F f) {
+        template <typename F>
+        Lazy<typename std::result_of<F(A)>::type> map(F f) {
+            typedef typename std::result_of<F(A)>::type B;
             Lazy<A>& self = *this;
-            return Lazy([=] { return f(self()); });
+            return Lazy<B>([=] { return f(self()); });
         }
 
     private:
+        nonstd::optional<Lazy<A>> value_op;
         std::function<A()> k;
     };
 
@@ -52,7 +57,7 @@ namespace sodium {
 
     private:
         nonstd::optional<Lazy<A>> value_op;
-        std::function<Lazy<A>> k;
+        std::function<Lazy<A>()> k;
     };
 
     class Node;
@@ -219,8 +224,9 @@ namespace sodium {
         {
         }
 
-        template <typename B, typename F>
-        Stream<B> map(F f) {
+        template <typename F>
+        Stream<typename std::result_of<F(A)>::type> map(const F& f) {
+            typedef typename std::result_of<F(A)>::type B;
             Stream<A>& self = *this;
             bacon_gc::Gc<Latch<nonstd::optional<A>>> latch(
                 Latch<nonstd::optional<A>>(
@@ -251,6 +257,6 @@ namespace sodium {
 
 
 static void test() {
-    sodium::Stream<int> sa(); // sa = never
+    sodium::Stream<int> sa; // sa = never
     sodium::Stream<int> sb = sa.map([](int a) { return a + 1; });
 }
