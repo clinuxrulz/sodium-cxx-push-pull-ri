@@ -5,8 +5,55 @@
 #include <unordered_set>
 #include <vector>
 #include <mutex>
+#include "sodium/optional.h"
 
 namespace sodium {
+
+    template <typename A>
+    class Lazy {
+    public:
+
+        template <typename F>
+        Lazy(F k): k(k) {}
+
+        A operator()() {
+            return k();
+        }
+
+        template <typename B, typename F>
+        Lazy<B> map(F f) {
+            Lazy<A>& self = *this;
+            return Lazy([=] { return f(self()); });
+        }
+
+    private:
+        std::function<A()> k;
+    };
+
+    template <typename A>
+    class Latch {
+    public:
+        template <typename F>
+        Latch(F k) {
+            this->value_op = nonstd::nullopt;
+            this->k = std::function<Lazy<A>>(k);
+        }
+
+        void reset() {
+            value_op = nonstd::nullopt;
+        }
+
+        Lazy<A> operator()() {
+            if (!value_op) {
+                value_op = k();
+            }
+            return *value_op;
+        }
+
+    private:
+        nonstd::optional<Lazy<A>> value_op;
+        std::function<Lazy<A>> k;
+    };
 
     class Node;
 
@@ -17,6 +64,15 @@ namespace sodium {
         std::vector<bacon_gc::Gc<NodeData>> dependencies;
         std::vector<bacon_gc::GcWeak<NodeData>> targets;
         std::vector<std::function<void()>> clean_ups;
+    };
+
+    NodeData null_node_data = {
+        id: -1,
+        rank: 0,
+        update: std::function<bool()>([] { return false; }),
+        dependencies: std::vector<bacon_gc::Gc<NodeData>>(),
+        targets: std::vector<bacon_gc::GcWeak<NodeData>>(),
+        clean_ups: std::vector<std::function<void()>>()
     };
 
     static int next_id();
@@ -59,15 +115,14 @@ namespace sodium {
             }
             data->clean_ups.push_back(std::function<void()>([this] {
                 for (std::vector<bacon_gc::Gc<NodeData>>::iterator it = this->data->dependencies.begin(); it != this->data->dependencies.end(); ++it) {
-                    /* TODO:
-                    for (int i = dependence.node().targets.size()-1; i >= 0; --i) {
-                        WeakReference<Node> target = dependence.node().targets.get(i);
-                        Node target2 = target.get();
-                        if (target2 == null || target2 == this) {
-                            dependence.node().targets.remove(i);
+                    bacon_gc::Gc<NodeData>& n = *it;
+                    for (int i = n->targets.size(); i >= 0; --i) {
+                        bacon_gc::GcWeak<NodeData> target = n->targets[i];
+                        bacon_gc::Gc<NodeData> target2 = target.lock();
+                        if (target2 && target2->id == this->data->id) {
+                            n->targets.erase(n->targets.begin() + i);
                         }
                     }
-                    */
                 }
             }));
         }
@@ -76,6 +131,8 @@ namespace sodium {
             return data;
         }
     };
+
+    Node null_node(bacon_gc::Gc<NodeData>(null_node_data));
 
 }
 
@@ -146,4 +203,54 @@ namespace sodium {
 
     struct Listener {};
 
+    template <typename A>
+    struct StreamData {
+        bacon_gc::Gc<NodeData> node;
+        bacon_gc::Gc<Latch<nonstd::optional<A>>> latch;
+    };
+
+    template <typename A>
+    class Stream {
+    public:
+        Stream(): Stream(null_node, bacon_gc::Gc<Latch<nonstd::optional<A>>>(Latch<nonstd::optional<A>>([] { return nonstd::nullopt; }))) {}
+
+        Stream(NodeData node, bacon_gc::Gc<Latch<nonstd::optional<A>>> latch)
+        : data(bacon_gc::Gc<StreamData<A>>({ node, latch }))
+        {
+        }
+
+        template <typename B, typename F>
+        Stream<B> map(F f) {
+            Stream<A>& self = *this;
+            bacon_gc::Gc<Latch<nonstd::optional<A>>> latch(
+                Latch<nonstd::optional<A>>(
+                    [=]() {
+                        return self->data->latch().map(f);
+                    }
+                )
+            );
+            std::vector<bacon_gc::Gc<NodeData>> dependencies;
+            dependencies.push_back(data->node);
+            return Stream<B>(
+                Node(
+                    dependencies,
+                    [=] {
+                        latch->reset();
+                        return true;
+                    }
+                ),
+                latch
+            );
+        }
+
+    private:
+        bacon_gc::Gc<StreamData<A>> data;
+    };
+
 } // end namespace sodium
+
+
+static void test() {
+    sodium::Stream<int> sa(); // sa = never
+    sodium::Stream<int> sb = sa.map([](int a) { return a + 1; });
+}
