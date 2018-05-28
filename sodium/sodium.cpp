@@ -9,6 +9,15 @@
 
 namespace sodium {
 
+    template <typename A, typename F>
+    static nonstd::optional<typename std::result_of<F(A)>::type> optional_map(F f, nonstd::optional<A> ma) {
+        if (ma) {
+            return f(*ma);
+        } else {
+            return nonstd::nullopt;
+        }
+    }
+
     template <typename A>
     class Lazy {
     public:
@@ -31,7 +40,7 @@ namespace sodium {
         }
 
     private:
-        nonstd::optional<Lazy<A>> value_op;
+        nonstd::optional<A> value_op;
         std::function<A()> k;
     };
 
@@ -41,7 +50,7 @@ namespace sodium {
         template <typename F>
         Latch(F k) {
             this->value_op = nonstd::nullopt;
-            this->k = std::function<Lazy<A>>(k);
+            this->k = std::function<Lazy<A>()>(k);
         }
 
         void reset() {
@@ -89,12 +98,12 @@ namespace sodium {
         virtual bacon_gc::Gc<NodeData> node_data() const = 0;
     };
 
-    int calc_rank(std::vector<HasNodeData*> dependencies) {
+    int calc_rank(std::vector<bacon_gc::Gc<NodeData>> dependencies) {
         int rank = 0;
-        for (std::vector<HasNodeData*>::iterator it = dependencies.begin(); it != dependencies.end(); ++it) {
-            HasNodeData& depends_on = *(*it);
-            if (depends_on.node_data()->rank >= rank) {
-                rank = depends_on.node_data()->rank + 1;
+        for (std::vector<bacon_gc::Gc<NodeData>>::iterator it = dependencies.begin(); it != dependencies.end(); ++it) {
+            bacon_gc::Gc<NodeData>& depends_on = (*it);
+            if (depends_on->rank >= rank) {
+                rank = depends_on->rank + 1;
             }
         }
         return rank;
@@ -104,19 +113,19 @@ namespace sodium {
     public:
         bacon_gc::Gc<NodeData> data;
 
-        Node(bacon_gc::Gc<NodeData>& data): data(data) {}
+        Node(const bacon_gc::Gc<NodeData>& data): data(data) {}
 
-        Node(): Node(std::vector<HasNodeData*>(), std::function<bool()>([] { return false; })) {
+        Node(): Node(std::vector<bacon_gc::Gc<NodeData>>(), std::function<bool()>([] { return false; })) {
         }
 
-        Node(std::vector<HasNodeData*> dependencies, std::function<bool()> update) {
+        Node(std::vector<bacon_gc::Gc<NodeData>> dependencies, std::function<bool()> update) {
             data->id = next_id();
             data->rank = calc_rank(dependencies);
             data->update = update;
-            for (std::vector<HasNodeData*>::iterator it = dependencies.begin(); it != dependencies.end(); ++it) {
-                HasNodeData& dependency = *(*it);
-                data->dependencies.push_back(dependency.node_data());
-                dependency.node_data()->targets.push_back(data.downgrade());
+            for (std::vector<bacon_gc::Gc<NodeData>>::iterator it = dependencies.begin(); it != dependencies.end(); ++it) {
+                bacon_gc::Gc<NodeData>& dependency = (*it);
+                data->dependencies.push_back(dependency);
+                dependency->targets.push_back(data.downgrade());
             }
             data->clean_ups.push_back(std::function<void()>([this] {
                 for (std::vector<bacon_gc::Gc<NodeData>>::iterator it = this->data->dependencies.begin(); it != this->data->dependencies.end(); ++it) {
@@ -137,7 +146,7 @@ namespace sodium {
         }
     };
 
-    Node null_node(bacon_gc::Gc<NodeData>(null_node_data));
+    static Node null_node(bacon_gc::Gc<NodeData>(new NodeData(null_node_data)));
 
 }
 
@@ -199,28 +208,33 @@ namespace sodium {
         });
     }
 
-    class HasNode {
-    public:
-        virtual ~HasNode() {};
-
-        virtual Node* node() = 0;
-    };
-
     struct Listener {};
 
     template <typename A>
     struct StreamData {
-        bacon_gc::Gc<NodeData> node;
+        Node node;
         bacon_gc::Gc<Latch<nonstd::optional<A>>> latch;
     };
 
     template <typename A>
-    class Stream {
+    class Stream: public HasNodeData {
     public:
-        Stream(): Stream(null_node, bacon_gc::Gc<Latch<nonstd::optional<A>>>(Latch<nonstd::optional<A>>([] { return nonstd::nullopt; }))) {}
+        Stream()
+        : Stream(
+            null_node,
+            bacon_gc::Gc<Latch<nonstd::optional<A>>>(
+                new Latch<nonstd::optional<A>>(
+                    [] {
+                        return Lazy<nonstd::optional<A>>([] { return nonstd::nullopt; });
+                    }
+                )
+            )
+        )
+        {
+        }
 
-        Stream(NodeData node, bacon_gc::Gc<Latch<nonstd::optional<A>>> latch)
-        : data(bacon_gc::Gc<StreamData<A>>({ node, latch }))
+        Stream(Node node, bacon_gc::Gc<Latch<nonstd::optional<A>>> latch)
+        : data(bacon_gc::Gc<StreamData<A>>(new StreamData<A>({ node, latch })))
         {
         }
 
@@ -229,14 +243,16 @@ namespace sodium {
             typedef typename std::result_of<F(A)>::type B;
             Stream<A>& self = *this;
             bacon_gc::Gc<Latch<nonstd::optional<A>>> latch(
-                Latch<nonstd::optional<A>>(
+                new Latch<nonstd::optional<A>>(
                     [=]() {
-                        return self->data->latch().map(f);
+                        return Lazy<nonstd::optional<B>>([=] {
+                            return optional_map(f, (*self.data->latch)()());
+                        });
                     }
                 )
             );
             std::vector<bacon_gc::Gc<NodeData>> dependencies;
-            dependencies.push_back(data->node);
+            dependencies.push_back(data->node.node_data());
             return Stream<B>(
                 Node(
                     dependencies,
@@ -249,8 +265,62 @@ namespace sodium {
             );
         }
 
+        bacon_gc::Gc<NodeData> node_data() const {
+            return data->node.node_data();
+        }
     private:
         bacon_gc::Gc<StreamData<A>> data;
+    };
+
+    template<typename A>
+    struct StreamSinkData {
+        Node node;
+        nonstd::optional<A> value;
+        bool value_will_reset;
+        Stream<A> stream;
+    };
+
+    template<typename A>
+    class StreamSink {
+    public:
+        StreamSink() {
+            this.data = bacon_gc::Gc<StreamSinkData<A>>(new StreamSinkData<A>({
+                node: null_node,
+                value: nonstd::nullopt,
+                value_will_reset: false,
+                stream: Stream<A>(
+                    null_node,
+                    bacon_gc::Gc<Latch<nonstd::optional<A>>>(
+                        [this] {
+                            return Lazy<nonstd::optional<A>>([this] {
+                                return this->data.value;
+                            });
+                        }
+                    )
+                )
+            }));
+        }
+
+        /* TODO:
+        public void send(A value) {
+            transactionVoid(() -> {
+                this._value = Option.some(value);
+                if (!this._valueWillReset) {
+                    this._valueWillReset = true;
+                    last(() -> {
+                        this._value = Option.none();
+                        this._valueWillReset = false;
+                    });
+                }
+                this._node.changed();
+            });
+        }*/
+
+        Stream<A> stream() {
+            return data->stream;
+        }
+    private:
+        bacon_gc::Gc<StreamSinkData<A>> data;
     };
 
 } // end namespace sodium
