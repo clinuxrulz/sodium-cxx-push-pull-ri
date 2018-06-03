@@ -6,6 +6,7 @@
 #include <vector>
 #include <mutex>
 #include "sodium/optional.h"
+#include "sodium/finally.h"
 
 namespace sodium {
 
@@ -144,6 +145,10 @@ namespace sodium {
         bacon_gc::Gc<NodeData> node_data() const {
             return data;
         }
+
+        void changed() {
+            // TODO
+        }
     };
 
     static Node null_node(bacon_gc::Gc<NodeData>(new NodeData(null_node_data)));
@@ -195,17 +200,70 @@ namespace sodium {
     static SodiumCtx _sodium_ctx;
     static std::mutex _sodium_ctx_mutex;
 
-    template <typename A, typename F>
-    A with_sodium_ctx(F f) {
+    template <typename F>
+    typename std::result_of<F(SodiumCtx&)>::type with_sodium_ctx(F f) {
         std::lock_guard<std::mutex> guard(_sodium_ctx_mutex);
         return f(_sodium_ctx);
     }
 
     static int next_id() {
-        return with_sodium_ctx<int>([](SodiumCtx& sodium_ctx) {
+        return with_sodium_ctx([](SodiumCtx& sodium_ctx) {
             int id = sodium_ctx.next_id++;
             return id;
         });
+    }
+
+    static void update();
+
+    template<typename K>
+    typename std::result_of<K()>::type transaction(K code) {
+        return with_finally(
+            [=] {
+                with_sodium_ctx([=](SodiumCtx& sodium_ctx) {
+                    ++sodium_ctx.transaction_depth;
+                });
+                return code();
+            },
+            [] {
+                int transaction_depth = with_sodium_ctx([](SodiumCtx& sodium_ctx) {
+                    --sodium_ctx.transaction_depth;
+                    return sodium_ctx.transaction_depth;
+                });
+                if (transaction_depth == 0) {
+                    update();
+                }
+            }
+        );
+    }
+
+    template<typename K>
+    void transaction_void(K code) {
+        with_finally_void(
+            [=] {
+                with_sodium_ctx([=](SodiumCtx& sodium_ctx) {
+                    ++sodium_ctx.transaction_depth;
+                });
+                code();
+            },
+            [] {
+                int transaction_depth = with_sodium_ctx([](SodiumCtx& sodium_ctx) {
+                    --sodium_ctx.transaction_depth;
+                    return sodium_ctx.transaction_depth;
+                });
+                if (transaction_depth == 0) {
+                    update();
+                }
+            }
+        );
+    }
+
+    void update() {
+        // TODO
+    }
+
+    template<typename K>
+    void last(K code) {
+        // TODO
     }
 
     struct Listener {};
@@ -284,37 +342,38 @@ namespace sodium {
     class StreamSink {
     public:
         StreamSink() {
-            this.data = bacon_gc::Gc<StreamSinkData<A>>(new StreamSinkData<A>({
+            this->data = bacon_gc::Gc<StreamSinkData<A>>(new StreamSinkData<A>({
                 node: null_node,
                 value: nonstd::nullopt,
                 value_will_reset: false,
                 stream: Stream<A>(
                     null_node,
                     bacon_gc::Gc<Latch<nonstd::optional<A>>>(
-                        [this] {
+                        new Latch<nonstd::optional<A>>([this] {
                             return Lazy<nonstd::optional<A>>([this] {
-                                return this->data.value;
+                                return this->data->value;
                             });
-                        }
+                        })
                     )
                 )
             }));
         }
 
-        /* TODO:
-        public void send(A value) {
-            transactionVoid(() -> {
-                this._value = Option.some(value);
-                if (!this._valueWillReset) {
-                    this._valueWillReset = true;
-                    last(() -> {
-                        this._value = Option.none();
-                        this._valueWillReset = false;
+        void send(A value) {
+            transaction_void([=] {
+                StreamSinkData<A>& data = *this->data;
+                data.value = value;
+                if (!data.value_will_reset) {
+                    data.value_will_reset = true;
+                    last([this]() {
+                        StreamSinkData<A>& data = *this->data;
+                        data.value = nonstd::nullopt;
+                        data.value_will_reset = false;
                     });
                 }
-                this._node.changed();
+                data.node.changed();
             });
-        }*/
+        }
 
         Stream<A> stream() {
             return data->stream;
@@ -327,6 +386,10 @@ namespace sodium {
 
 
 static void test() {
-    sodium::Stream<int> sa; // sa = never
+    sodium::StreamSink<int> ssa;
+    sodium::Stream<int> sa = ssa.stream();
     sodium::Stream<int> sb = sa.map([](int a) { return a + 1; });
+    ssa.send(1);
+    ssa.send(2);
+    ssa.send(3);
 }

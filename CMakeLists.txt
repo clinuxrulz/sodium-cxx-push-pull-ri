@@ -67,8 +67,8 @@ set_target_properties( libsodium PROPERTIES OUTPUT_NAME sodium )
 
 # Testing
 
-# enable_testing()
-# add_subdirectory(tests)
+enable_testing()
+add_subdirectory(tests)
 
 # INSTALL
 # -------
