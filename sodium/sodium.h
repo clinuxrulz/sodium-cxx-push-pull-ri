@@ -111,6 +111,7 @@ namespace sodium {
         }
 
         Node(std::vector<bacon_gc::Gc<NodeData>> dependencies, std::function<bool()> update) {
+            data = bacon_gc::Gc<NodeData>(new NodeData());
             data->id = next_id();
             data->rank = calc_rank(dependencies);
             data->update = update;

@@ -19,7 +19,7 @@ else()
 endif()
 
 # set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wno-deprecated-declarations" )
-set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-deprecated-declarations" )
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-deprecated-declarations -g" )
 
 set( SODIUM_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/sodium )
 
