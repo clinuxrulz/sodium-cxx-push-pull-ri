@@ -11,6 +11,7 @@ using namespace sodium;
 
 void test_sodium::tearDown()
 {
+    bacon_gc::collect_cycles();
 }
 
 void test_sodium::map() {
