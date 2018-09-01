@@ -198,6 +198,12 @@ namespace sodium {
         return f(_sodium_ctx);
     }
 
+    template <typename F>
+    void with_sodium_ctx_void(F f) {
+        std::lock_guard<std::mutex> guard(_sodium_ctx_mutex);
+        f(_sodium_ctx);
+    }
+
     void update();
 
     template<typename K>
@@ -244,7 +250,9 @@ namespace sodium {
 
     template<typename K>
     void last(K code) {
-        // TODO
+        with_sodium_ctx_void([=](SodiumCtx& sodium_ctx) {
+            sodium_ctx.last.push_back(std::function<void()>(code));
+        });
     }
 
     struct Listener {};
