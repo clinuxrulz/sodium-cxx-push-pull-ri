@@ -178,7 +178,7 @@ namespace std {
 
 namespace sodium {
 
-    struct Listener;
+    class Listener;
 
     struct SodiumCtx {
         int next_id;
@@ -255,7 +255,13 @@ namespace sodium {
         });
     }
 
-    struct Listener {};
+    class Listener {
+    private:
+        std::function<void()> _unlisten;
+    public:
+        template <typename F>
+        Listener(F unlisten): _unlisten(std::function<void()>(unlisten)) {}
+    };
 
     template <typename A>
     struct StreamData {
