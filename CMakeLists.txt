@@ -28,8 +28,6 @@ set( GC_CXX_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/gc-cxx )
 
 set( CMAKE_INCLUDE_CURRENT_DIR ON )
 
-find_package( Boost REQUIRED )
-
 set(SODIUM_INCLUDE_FILES
     ${SODIUM_BASE_DIR}/sodium.h
     )
@@ -56,7 +54,7 @@ file(
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/include/bacon_gc
     )
 
-include_directories( ${CMAKE_SOURCE_DIR} ${Boost_INCLUDE_DIR} ${GC_CXX_INCLUDE_DIR} )
+include_directories( ${CMAKE_SOURCE_DIR} ${GC_CXX_INCLUDE_DIR} )
 
 set( ALL_SOURCES ${SODIUM_INCLUDE_FILES} ${SODIUM_SOURCE_FILES} ${GC_CXX_INCLUDE_FILES} ${GC_CXX_SOURCE_FILES} )
 
