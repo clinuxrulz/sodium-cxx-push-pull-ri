@@ -5,3 +5,10 @@ After initial clone run:
 
     git submodule init
     git submodule update
+
+To build then run:
+
+    mkdir build
+    cd build
+    cmake ..
+    make
