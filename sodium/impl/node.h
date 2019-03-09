@@ -28,7 +28,6 @@ namespace sodium::impl {
         std::vector<WeakNode> dependents;
         std::function<void()> cleanup;
         std::vector<std::function<void()>> additional_cleanups;
-        // SodiumCtx sodiumCtx;
     };
 
 }
