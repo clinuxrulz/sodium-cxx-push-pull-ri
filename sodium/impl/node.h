@@ -45,6 +45,13 @@ namespace std {
             return lhs.data->id == rhs.data->id;
         }
     };
+
+    template<>
+    struct less<sodium::impl::Node> {
+        bool operator()(const sodium::impl::Node& lhs, const sodium::impl::Node& rhs) const {
+            return lhs.data->rank < rhs.data->rank;
+        }
+    };
 }
 
 #endif // _SODIUM_IMPL_NODE_H_
