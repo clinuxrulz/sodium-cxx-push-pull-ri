@@ -62,7 +62,55 @@ namespace sodium::impl {
             return this->_callback_depth;
         }
 
+        template <typename F>
+        void pre(F f) {
+            transaction_void([this,f]() {
+                this->_pre_trans.push_back(std::function<void()>(f));
+            });
+        }
+
+        template <typename F>
+        void post(F f) {
+            transaction_void([this,f]() {
+                this->_post_trans.push_back(std::function<void()>(f));
+            });
+        }
+
+        template <typename F>
+        void transaction_void(F f) {
+            transaction<int>([f]() { f(); return 0; });
+        }
+
+        template <typename A,typename F>
+        A&& transaction(F f) {
+            ++this->_transaction_depth;
+            A result = f();
+            --this->_transaction_depth;
+            if (this->_transaction_depth == 0) {
+                this->propergate();
+            }
+            return result;
+        }
+
+        void schedule_update_sort() {
+            this->_resort_required = true;
+        }
         
+        void propergate() {
+            if (this->_resort_required) {
+                while (!this->_to_be_updated.empty()) {
+                    this->_to_be_updated.pop();
+                }
+                for (auto it = this->_to_be_updated_set.begin(); it != this->_to_be_updated_set.end(); ++it) {
+                    this->_to_be_updated.push(*it);
+                }
+                this->_resort_required = false;
+            }
+            ++this->_transaction_depth;
+            // TODO:
+            --this->_transaction_depth;
+            // TODO:
+        }
     };
 
     extern SodiumCtx __sodium_ctx;
