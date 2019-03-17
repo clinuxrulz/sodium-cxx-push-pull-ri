@@ -12,7 +12,7 @@
 
 namespace sodium::impl {
 
-    typedef struct SodiumCtx {
+    struct SodiumCtx {
         unsigned int next_id = 0;
         unsigned int transaction_depth = 0;
         unsigned int callback_depth = 0;

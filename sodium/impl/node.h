@@ -4,22 +4,22 @@
 #define _SODIUM_IMPL_NODE_H_
 
 #include "bacon_gc/gc.h"
-#include "functional"
-#include "vector"
+#include <functional>
+#include <vector>
 
 namespace sodium::impl {
 
-    typedef struct NodeData;
+    struct NodeData;
 
-    typedef struct Node {
+    struct Node {
         bacon_gc::Gc<NodeData> data;
     };
 
-    typedef struct WeakNode {
+    struct WeakNode {
         bacon_gc::GcWeak<NodeData> data;
     };
 
-    typedef struct NodeData {
+    struct NodeData {
         unsigned int id;
         unsigned int rank;
         std::function<void()> update;
@@ -29,7 +29,22 @@ namespace sodium::impl {
         std::function<void()> cleanup;
         std::vector<std::function<void()>> additional_cleanups;
     };
+}
 
+namespace std {
+    template<>
+    struct hash<sodium::impl::Node> {
+        size_t operator()(const sodium::impl::Node& node) const {
+            return node.data->id;
+        }
+    };
+
+    template<>
+    struct equal_to<sodium::impl::Node> {
+        bool operator()(const sodium::impl::Node& lhs, const sodium::impl::Node& rhs) const {
+            return lhs.data->id == rhs.data->id;
+        }
+    };
 }
 
 #endif // _SODIUM_IMPL_NODE_H_
