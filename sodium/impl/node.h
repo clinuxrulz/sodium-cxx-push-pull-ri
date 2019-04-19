@@ -4,6 +4,7 @@
 #define _SODIUM_IMPL_NODE_H_
 
 #include <functional>
+#include <unordered_set>
 #include <vector>
 #include <memory>
 #include "bacon_gc/gc.h"
@@ -72,6 +73,12 @@ namespace sodium::impl {
         return { data: bacon_gc::Gc<NodeData>(node_data) };
     }
 
+    template <typename CLEANUP>
+    static void node_add_cleanup(Node* node, CLEANUP cleanup) {
+        node->data->additional_cleanups.push_back(cleanup);
+    }
+
+    static void node_ensure_bigger_than(Node* node, int rank);
 }
 
 #endif // _SODIUM_IMPL_NODE_H_
