@@ -22,7 +22,7 @@ namespace sodium::impl {
     struct NodeData {
         unsigned int id;
         unsigned int rank;
-        std::function<void()> update;
+        std::function<bool()> update;
         std::vector<bacon_gc::Node> update_dependencies;
         std::vector<Node> dependencies;
         std::vector<WeakNode> dependents;
