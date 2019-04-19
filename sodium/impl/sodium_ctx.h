@@ -107,9 +107,32 @@ namespace sodium::impl {
                 this->_resort_required = false;
             }
             ++this->_transaction_depth;
-            // TODO:
+            while (!this->_to_be_updated.empty()) {
+                auto node = this->_to_be_updated.top();
+                this->_to_be_updated.pop();
+                this->_to_be_updated_set.erase(node);
+                auto mark_dependents_dirty = node.data->update();
+                if (mark_dependents_dirty) {
+                    for (auto it = node.data->dependents.begin(); it != node.data->dependents.end(); ++it) {
+                        auto weakDependent = *it;
+                        auto dependent = weakDependent.data.lock();
+                        if (dependent) {
+                            auto dependent2 = Node { data: dependent };
+                            this->_to_be_updated.push(dependent2);
+                            this->_to_be_updated_set.insert(dependent2);
+                        }
+                    }
+                }
+            }
             --this->_transaction_depth;
-            // TODO:
+            while (this->_post_trans.size() != 0) {
+                auto post_trans = this->_post_trans;
+                this->_post_trans.clear();
+                for (auto it = post_trans.begin(); it != post_trans.end(); ++it) {
+                    auto post_trans2 = *it;
+                    post_trans2();
+                }
+            }
         }
     };
 
