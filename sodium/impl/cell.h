@@ -14,6 +14,10 @@ namespace sodium::impl {
         Node node;
         sodium::Lazy<A> value;
         nonstd::optional<sodium::Lazy<A>> next_value_op;
+
+        CellData(Node node, sodium::Lazy<A> value, nonstd::optional<sodium::Lazy<A>> next_value_op)
+        : node(node), value(value), next_value_op(next_value_op) {
+        }
     };
 
     template <typename A>
@@ -24,26 +28,31 @@ namespace sodium::impl {
         Cell(bacon_gc::Gc<CellData<A>> data): data(data) {}
 
         Cell(A value) {
-            CellData<A>* data2 = new CellData<A>();
-            data2->node = node_new(
-                []() { return false; },
-                std::vector<bacon_gc::Node*>(),
-                std::vector<Node>(),
-                []() {},
-                "Cell::pure"
+            CellData<A>* data2 = new CellData<A>(
+                node_new(
+                    []() { return false; },
+                    std::vector<bacon_gc::Node*>(),
+                    std::vector<Node>(),
+                    []() {},
+                    "Cell::pure"
+                ),
+                sodium::Lazy<A>([=]() { return value; }),
+                nonstd::nullopt
             );
-            data2->value = value;
-            data2->next_value_op = nonstd::nullopt;
             this->data = bacon_gc::Gc<CellData<A>>(data2);
         }
 
         template <typename FN>
         Cell<typename std::result_of<FN(A)>::type> map(FN f) {
             typedef typename std::result_of<FN(A)>::type B;
-            CellData<B>* data2 = new CellData<A>();
+            CellData<B>* data2 = new CellData<A>(
+                Node(),
+                this->data->value.map(f),
+                nonstd::nullopt
+            );
             auto update = [=]() {
                 if (this->data->next_value_op) {
-                    data2->next_value_op = nonstd::optional<B>(this->data->next_value_op.value().map(f));
+                    data2->next_value_op = nonstd::optional<sodium::Lazy<B>>(this->data->next_value_op.value().map(f));
                     return true;
                 }
                 return false;
@@ -58,7 +67,6 @@ namespace sodium::impl {
                 "Cell::map"
             );
             data2->node = node;
-            data2->value = this->data->value.map(f);
             update();
             return Cell<B>(data2);
         }
