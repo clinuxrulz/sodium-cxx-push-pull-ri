@@ -29,7 +29,7 @@ void test_sodium::cell_map() {
     auto cb = ca.map([](int a) { return a + 1; });
 }
 
-// Just here for type-checking. Templates are not type checked at compile time.
+// Just here for type-checking templates at compile time.
 void test_sodium::lazy_map() {
     sodium::Lazy<int> a = sodium::Lazy<int>([]() { return 1; });
     auto b = a.map([](int x) { return x + 1; });
