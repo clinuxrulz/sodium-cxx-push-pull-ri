@@ -24,7 +24,7 @@ namespace sodium::impl {
             CellData<A>* data2 = new CellData<A>();
             data2->node = node_new(
                 []() { return false; },
-                std::vector<bacon_gc::Node*>(),
+                std::vector<bacon_gc::Node>(),
                 std::vector<Node>(),
                 []() {},
                 "Cell::pure"

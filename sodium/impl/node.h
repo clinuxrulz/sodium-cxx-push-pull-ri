@@ -15,7 +15,7 @@ namespace sodium::impl {
     template <typename UPDATE, typename CLEANUP>
     static Node node_new(
         UPDATE update,
-        std::vector<bacon_gc::Node*> update_dependencies,
+        std::vector<bacon_gc::Node> update_dependencies,
         std::vector<Node> dependencies,
         CLEANUP cleanup,
         std::string desc
@@ -41,7 +41,7 @@ namespace sodium::impl {
             });
             return result;
         };
-        std::shared_ptr<NodeData> _self;
+        std::shared_ptr<NodeData*> _self;
         auto cleanup2 = [=]() {
             cleanup();
             for (auto it = dependencies.begin(); it != dependencies.end(); ++it) {
@@ -57,7 +57,7 @@ namespace sodium::impl {
                     }
                 }
             }
-            for (auto it = _self->additional_cleanups.begin(); it != _self->additional_cleanups.end(); ++it) {
+            for (auto it = (*_self)->additional_cleanups.begin(); it != (*_self)->additional_cleanups.end(); ++it) {
                 auto& cleanup = *it;
                 cleanup();
             }
@@ -69,7 +69,9 @@ namespace sodium::impl {
         node_data->update_dependencies = update_dependencies;
         node_data->dependencies = dependencies;
         node_data->cleanup = cleanup2;
-        _self = node_data;
+        NodeData** tmp = new NodeData*;
+        *tmp = node_data;
+        _self = std::shared_ptr<NodeData*>(tmp);
         return { data: bacon_gc::Gc<NodeData>(node_data) };
     }
 
