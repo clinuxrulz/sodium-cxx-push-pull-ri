@@ -39,7 +39,6 @@ set(SODIUM_SOURCE_FILES
     ${SODIUM_BASE_DIR}/sodium.cpp
     ${SODIUM_BASE_DIR}/impl/node.cpp
     ${SODIUM_BASE_DIR}/impl/sodium_ctx.cpp
-    ${SODIUM_BASE_DIR}/impl/type_check_test.cpp
     )
 
 set(GC_CXX_INCLUDE_FILES

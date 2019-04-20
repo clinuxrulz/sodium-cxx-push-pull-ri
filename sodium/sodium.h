@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include <vector>
 #include <mutex>
+#include "sodium/lazy.h"
 #include "sodium/optional.h"
 #include "sodium/finally.h"
 
@@ -20,32 +21,6 @@ namespace sodium {
             return nonstd::nullopt;
         }
     }
-
-    template <typename A>
-    class Lazy {
-    public:
-
-        template <typename F>
-        Lazy(F k): k(k) {}
-
-        A operator()() {
-            if (!value_op) {
-                value_op = k();
-            }
-            return *value_op;
-        }
-
-        template <typename F>
-        Lazy<typename std::result_of<F(A)>::type> map(F f) {
-            typedef typename std::result_of<F(A)>::type B;
-            Lazy<A>& self = *this;
-            return Lazy<B>([=] { return f(self()); });
-        }
-
-    private:
-        nonstd::optional<A> value_op;
-        std::function<A()> k;
-    };
 
     template <typename A>
     class Latch {

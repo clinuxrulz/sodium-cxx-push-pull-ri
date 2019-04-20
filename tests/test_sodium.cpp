@@ -1,5 +1,6 @@
 #include "test_sodium.h"
 #include <sodium/sodium.h>
+#include <sodium/impl/cell.h>
 
 #include <cppunit/ui/text/TestRunner.h>
 #include <stdio.h>
@@ -21,6 +22,17 @@ void test_sodium::map() {
     ssa.send(1);
     ssa.send(2);
     ssa.send(3);
+}
+
+void test_sodium::cell_map() {
+    sodium::impl::Cell<int> ca(1);
+    auto cb = ca.map([](int a) { return a + 1; });
+}
+
+// Just here for type-checking. Templates are not type checked at compile time.
+void test_sodium::lazy_map() {
+    sodium::Lazy<int> a = sodium::Lazy<int>([]() { return 1; });
+    auto b = a.map([](int x) { return x + 1; });
 }
 
 int main(int argc, char* argv[]) {
