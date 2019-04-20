@@ -2,8 +2,9 @@
 #define _SODIUM_IMPL_CELL_H_
 
 #include "bacon_gc/gc.h"
-#include "impl/sodium_ctx.h"
-#include "impl/node.h"
+#include "sodium/optional.h"
+#include "sodium/impl/sodium_ctx.h"
+#include "sodium/impl/node.h"
 
 namespace sodium::impl {
 
@@ -11,6 +12,7 @@ namespace sodium::impl {
     struct CellData {
         Node node;
         A value;
+        nonstd::optional<A> next_value_op;
     };
 
     template <typename A>
@@ -18,16 +20,17 @@ namespace sodium::impl {
     public:
         bacon_gc::Gc<CellData<A>> data;
 
-        Cell::Cell(A value) {
-            CellData<A> data2 = new CellData<A>();
+        Cell(A value) {
+            CellData<A>* data2 = new CellData<A>();
             data2->node = node_new(
-                []() {},
+                []() { return false; },
                 std::vector<bacon_gc::Node*>(),
                 std::vector<Node>(),
                 []() {},
                 "Cell::pure"
             );
             data2->value = value;
+            data2->next_value_op = nonstd::nullopt;
             this->data = bacon_gc::Gc<CellData<A>>(data2);
         }
     };
