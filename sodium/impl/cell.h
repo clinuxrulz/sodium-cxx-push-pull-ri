@@ -2,6 +2,7 @@
 #define _SODIUM_IMPL_CELL_H_
 
 #include "bacon_gc/gc.h"
+#include "sodium/lazy.h"
 #include "sodium/optional.h"
 #include "sodium/impl/sodium_ctx.h"
 #include "sodium/impl/node.h"
@@ -11,8 +12,8 @@ namespace sodium::impl {
     template <typename A>
     struct CellData {
         Node node;
-        A value;
-        nonstd::optional<A> next_value_op;
+        sodium::Lazy<A> value;
+        nonstd::optional<sodium::Lazy<A>> next_value_op;
     };
 
     template <typename A>
@@ -42,7 +43,7 @@ namespace sodium::impl {
             CellData<B>* data2 = new CellData<A>();
             auto update = [=]() {
                 if (this->data->next_value_op) {
-                    data2->next_value_op = nonstd::optional<B>(f(this->data->next_value_op.value()));
+                    data2->next_value_op = nonstd::optional<B>(this->data->next_value_op.value().map(f));
                     return true;
                 }
                 return false;
@@ -57,7 +58,7 @@ namespace sodium::impl {
                 "Cell::map"
             );
             data2->node = node;
-            data2->value = f(this->data->value);
+            data2->value = this->data->value.map(f);
             update();
             return Cell<B>(data2);
         }
