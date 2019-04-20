@@ -15,7 +15,7 @@ namespace sodium::impl {
     template <typename UPDATE, typename CLEANUP>
     static Node node_new(
         UPDATE update,
-        std::vector<bacon_gc::Node> update_dependencies,
+        std::vector<bacon_gc::Node*> update_dependencies,
         std::vector<Node> dependencies,
         CLEANUP cleanup,
         std::string desc

@@ -20,11 +20,13 @@ namespace sodium::impl {
     public:
         bacon_gc::Gc<CellData<A>> data;
 
+        Cell(bacon_gc::Gc<CellData<A>> data): data(data) {}
+
         Cell(A value) {
             CellData<A>* data2 = new CellData<A>();
             data2->node = node_new(
                 []() { return false; },
-                std::vector<bacon_gc::Node>(),
+                std::vector<bacon_gc::Node*>(),
                 std::vector<Node>(),
                 []() {},
                 "Cell::pure"
@@ -32,6 +34,32 @@ namespace sodium::impl {
             data2->value = value;
             data2->next_value_op = nonstd::nullopt;
             this->data = bacon_gc::Gc<CellData<A>>(data2);
+        }
+
+        template <typename FN>
+        Cell<typename std::result_of<FN(A)>::type> map(FN f) {
+            typedef typename std::result_of<FN(A)>::type B;
+            CellData<B>* data2 = new CellData<A>();
+            auto update = [=]() {
+                if (this->data->next_value_op) {
+                    data2->next_value_op = nonstd::optional<B>(f(this->data->next_value_op.value()));
+                    return true;
+                }
+                return false;
+            };
+            std::vector<Node> dependencies;
+            dependencies.push_back(this->data->node);
+            Node node = node_new(
+                update,
+                std::vector<bacon_gc::Node*>(),
+                dependencies,
+                []() {},
+                "Cell::map"
+            );
+            data2->node = node;
+            data2->value = f(this->data->value);
+            update();
+            return Cell<B>(data2);
         }
     };
 
