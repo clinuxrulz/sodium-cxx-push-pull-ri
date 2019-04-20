@@ -30,10 +30,15 @@ set( CMAKE_INCLUDE_CURRENT_DIR ON )
 
 set(SODIUM_INCLUDE_FILES
     ${SODIUM_BASE_DIR}/sodium.h
+    ${SODIUM_BASE_DIR}/impl/cell.h
+    ${SODIUM_BASE_DIR}/impl/node.h
+    ${SODIUM_BASE_DIR}/impl/sodium_ctx.h
     )
 
 set(SODIUM_SOURCE_FILES
     ${SODIUM_BASE_DIR}/sodium.cpp
+    ${SODIUM_BASE_DIR}/impl/node.cpp
+    ${SODIUM_BASE_DIR}/impl/sodium_ctx.cpp
     )
 
 set(GC_CXX_INCLUDE_FILES

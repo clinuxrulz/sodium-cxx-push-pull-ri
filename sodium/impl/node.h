@@ -8,7 +8,7 @@
 #include <vector>
 #include <memory>
 #include "bacon_gc/gc.h"
-#include "sodium_ctx.h"
+#include "sodium/impl/sodium_ctx.h"
 
 namespace sodium::impl {
 
