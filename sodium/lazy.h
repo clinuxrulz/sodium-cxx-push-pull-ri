@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "bacon_gc/gc.h"
+#include "sodium/optional_trace.h"
 #include "sodium/optional.h"
 
 namespace sodium {
@@ -63,7 +64,7 @@ namespace bacon_gc {
         template <typename F>
         static void trace(const sodium::LazyData<A>& a, F&& k) {
             if (a.value_op) {
-                auto value = a.value_op.value();
+                A const& value = *a.value_op;
                 Trace<A>::trace(value, k);
             }
             for (auto it = a.gc_deps.begin(); it != a.gc_deps.end(); ++it) {

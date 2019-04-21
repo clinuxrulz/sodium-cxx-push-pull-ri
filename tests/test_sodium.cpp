@@ -1,5 +1,6 @@
 #include "test_sodium.h"
 #include <sodium/sodium.h>
+#include <sodium/primitive_trace.h>
 #include <sodium/impl/cell.h>
 
 #include <cppunit/ui/text/TestRunner.h>
