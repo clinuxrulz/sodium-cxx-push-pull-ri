@@ -74,4 +74,20 @@ namespace sodium::impl {
 
 }
 
+namespace bacon_gc {
+
+    template <typename A>
+    struct Trace<sodium::impl::CellData<A>> {
+        template <typename F>
+        static void trace(const sodium::impl::CellData<A>& a, F&& k) {
+            Trace<sodium::impl::Node>::trace(a.node, k);
+            Trace<sodium::Lazy<A>>::trace(a.value, k);
+            if (a.next_value_op) {
+                auto next_value = *a.next_value_op;
+                Trace<sodium::Lazy<A>>::trace(next_value, k);
+            }
+        }
+    };
+}
+
 #endif // _SODIUM_IMPL_CELL_H_

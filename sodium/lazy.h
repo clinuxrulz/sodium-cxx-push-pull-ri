@@ -1,6 +1,7 @@
 #ifndef _SODIUM_LAZY_H_
 #define _SODIUM_LAZY_H_
 
+#include <vector>
 #include "bacon_gc/gc.h"
 #include "sodium/optional.h"
 
@@ -10,6 +11,7 @@ namespace sodium {
     struct LazyData {
         nonstd::optional<A> value_op;
         std::function<A()> k;
+        std::vector<bacon_gc::Node*> gc_deps;
     };
 
     template <typename A>
@@ -19,6 +21,12 @@ namespace sodium {
         template <typename F>
         Lazy(F k) {
             this->data->k = k;
+        }
+
+        template <typename F>
+        Lazy(F k, std::vector<bacon_gc::Node*> gc_deps) {
+            this->data->k = k;
+            this->data->gc_deps = gc_deps;
         }
 
         A operator()() {
@@ -34,10 +42,36 @@ namespace sodium {
             return Lazy<B>([=]() { return f((*this)()); });
         }
 
-    private:
+    //private:
         bacon_gc::Gc<LazyData<A>> data;
     };
 
+}
+
+namespace bacon_gc {
+
+    template <typename A>
+    struct Trace<sodium::Lazy<A>> {
+        template <typename F>
+        static void trace(const sodium::Lazy<A>& a, F&& k) {
+            Trace<bacon_gc::Gc<sodium::LazyData<A>>>::trace(a.data, k);
+        }
+    };
+
+    template <typename A>
+    struct Trace<sodium::LazyData<A>> {
+        template <typename F>
+        static void trace(const sodium::LazyData<A>& a, F&& k) {
+            if (a.value_op) {
+                auto value = a.value_op.value();
+                Trace<A>::trace(value, k);
+            }
+            for (auto it = a.gc_deps.begin(); it != a.gc_deps.end(); ++it) {
+                auto gc_dep = *it;
+                k(gc_dep);
+            }
+        }
+    };
 }
 
 #endif // _SODIUM_LAZY_H_
