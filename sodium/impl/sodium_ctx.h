@@ -36,6 +36,32 @@ namespace sodium::impl {
 
 }
 
+namespace bacon_gc {
+
+    template <>
+    struct Trace<sodium::impl::Node> {
+        template <typename F>
+        static void trace(const sodium::impl::Node& a, F&& k) {
+            Trace<bacon_gc::Gc<sodium::impl::NodeData>>::trace(a.data, k);
+        }
+    };
+
+    template <>
+    struct Trace<sodium::impl::NodeData> {
+        template <typename F>
+        static void trace(const sodium::impl::NodeData& a, F&& k) {
+            for (auto it = a.update_dependencies.begin(); it != a.update_dependencies.end(); ++it) {
+                auto update_dependency = *it;
+                k(update_dependency);
+            }
+            for (auto it = a.dependencies.begin(); it != a.dependencies.end(); ++it) {
+                auto dependency = *it;
+                Trace<sodium::impl::Node>::trace(dependency, k);
+            }
+        }
+    };
+}
+
 namespace std {
 
     template<>
