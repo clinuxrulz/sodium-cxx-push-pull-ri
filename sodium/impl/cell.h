@@ -5,6 +5,7 @@
 #include "sodium/lazy.h"
 #include "sodium/listener.h"
 #include "sodium/optional.h"
+#include "sodium/optional_util.h"
 #include "sodium/impl/sodium_ctx.h"
 #include "sodium/impl/node.h"
 
@@ -72,11 +73,18 @@ namespace sodium::impl {
             return Cell<B>(bacon_gc::Gc<CellData<B>>(data2));
         }
 
-        /*
+        /* TODO: need to recieve next_value_op.orSome(value) for computing value in update
         template <typename B, typename FN>
         Cell<typename std::result_of<FN(A,B)>::type> lift2(Cell<B> const& cb, FN f) const {
             typedef typename std::result_of<FN(A,B)>::type C;
-            CellData<B>
+            CellData<B> data2 = new CellData<B>(
+                Node(),
+                this->data->value.lift2(cb.data->value, f),
+                nonstd::nullopt
+            );
+            auto update = [=]() {
+
+            };
         }*/
 
         template <typename FN>

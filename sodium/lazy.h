@@ -38,10 +38,16 @@ namespace sodium {
             return *(this->data->value_op);
         }
 
-        template <typename F>
-        Lazy<typename std::result_of<F(A)>::type> map(F f) {
-            typedef typename std::result_of<F(A)>::type B;
+        template <typename FN>
+        Lazy<typename std::result_of<FN(A)>::type> map(FN f) {
+            typedef typename std::result_of<FN(A)>::type B;
             return Lazy<B>([=]() { return f((*this)()); });
+        }
+
+        template <typename B, typename FN>
+        Lazy<typename std::result_of<FN(A,B)>::type> lift2(Lazy<B> lb, FN f) const {
+            typedef typename std::result_of<FN(A,B)>::type C;
+            return Lazy<C>([=]() { return f((*this)(), lb()); });
         }
 
     //private:
