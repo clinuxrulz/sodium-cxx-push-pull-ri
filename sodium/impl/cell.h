@@ -44,7 +44,7 @@ namespace sodium::impl {
         }
 
         template <typename FN>
-        Cell<typename std::result_of<FN(A)>::type> map(FN f) {
+        Cell<typename std::result_of<FN(A)>::type> map(FN f) const {
             typedef typename std::result_of<FN(A)>::type B;
             CellData<B>* data2 = new CellData<A>(
                 Node(),
@@ -72,8 +72,11 @@ namespace sodium::impl {
             return Cell<B>(data2);
         }
 
+        //template <typename B, typename FN>
+        //Cell<typename std::result_of<FN(A,B)>::type> lift2(Cell<B> const& cb)
+
         template <typename FN>
-        Listener listen_weak(FN f) {
+        Listener listen_weak(FN f) const {
             auto update = [=]() {
                 if (this->data->next_value_op) {
                     f(this->data->next_value_op.value()());
