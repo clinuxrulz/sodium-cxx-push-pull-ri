@@ -21,6 +21,7 @@ namespace sodium {
 
         template <typename F>
         Lazy(F k) {
+            this->data = bacon_gc::Gc<LazyData<A>>(new LazyData<A>());
             this->data->k = k;
         }
 
