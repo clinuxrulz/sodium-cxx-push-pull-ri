@@ -69,11 +69,15 @@ namespace sodium::impl {
             );
             data2->node = node;
             update();
-            return Cell<B>(data2);
+            return Cell<B>(bacon_gc::Gc<CellData<B>>(data2));
         }
 
-        //template <typename B, typename FN>
-        //Cell<typename std::result_of<FN(A,B)>::type> lift2(Cell<B> const& cb)
+        /*
+        template <typename B, typename FN>
+        Cell<typename std::result_of<FN(A,B)>::type> lift2(Cell<B> const& cb, FN f) const {
+            typedef typename std::result_of<FN(A,B)>::type C;
+            CellData<B>
+        }*/
 
         template <typename FN>
         Listener listen_weak(FN f) const {
