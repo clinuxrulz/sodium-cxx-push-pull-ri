@@ -157,7 +157,7 @@ namespace sodium::impl {
         }
 
         template <typename A,typename F>
-        A&& transaction(F f) {
+        A transaction(F f) {
             ++this->_transaction_depth;
             A result = f();
             --this->_transaction_depth;
@@ -172,6 +172,14 @@ namespace sodium::impl {
         }
         
         void propergate() {
+            while (this->_pre_trans.size() != 0) {
+                std::vector<std::function<void()>> pre_trans;
+                this->_pre_trans.swap(pre_trans);
+                for (auto it = pre_trans.begin(); it != pre_trans.end(); ++it) {
+                    auto pre_trans2 = *it;
+                    pre_trans2();
+                }
+            }
             if (this->_resort_required) {
                 while (!this->_to_be_updated.empty()) {
                     this->_to_be_updated.pop();

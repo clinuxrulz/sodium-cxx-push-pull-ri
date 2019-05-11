@@ -3,6 +3,7 @@
 
 #include "bacon_gc/gc.h"
 #include "sodium/lazy.h"
+#include "sodium/listener.h"
 #include "sodium/optional.h"
 #include "sodium/impl/sodium_ctx.h"
 #include "sodium/impl/node.h"
@@ -69,6 +70,39 @@ namespace sodium::impl {
             data2->node = node;
             update();
             return Cell<B>(data2);
+        }
+
+        template <typename FN>
+        Listener listen_weak(FN f) {
+            auto update = [=]() {
+                if (this->data->next_value_op) {
+                    f(this->data->next_value_op.value()());
+                    return true;
+                }
+                return false;
+            };
+            std::vector<Node> dependencies;
+            dependencies.push_back(this->data->node);
+            Node node = node_new(
+                update,
+                std::vector<bacon_gc::Node*>(),
+                dependencies,
+                []() {},
+                "Cell::listen"
+            );
+            nonstd::optional<Node> keep_alive_op = nonstd::optional<Node>(node);
+            with_sodium_ctx_void([=](SodiumCtx& sodium_ctx) {
+                sodium_ctx.pre([=]() {
+                    if (this->data->next_value_op) {
+                        f(this->data->next_value_op.value()());
+                    } else {
+                        f(this->data->value());
+                    }
+                });
+            });
+            return Listener([=]() mutable {
+                keep_alive_op = nonstd::nullopt;
+            });
         }
     };
 

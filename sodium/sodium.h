@@ -8,6 +8,7 @@
 #include <vector>
 #include <mutex>
 #include "sodium/lazy.h"
+#include "sodium/listener.h"
 #include "sodium/optional.h"
 #include "sodium/finally.h"
 
@@ -229,14 +230,6 @@ namespace sodium {
             sodium_ctx.last.push_back(std::function<void()>(code));
         });
     }
-
-    class Listener {
-    private:
-        std::function<void()> _unlisten;
-    public:
-        template <typename F>
-        Listener(F unlisten): _unlisten(std::function<void()>(unlisten)) {}
-    };
 
     template <typename A>
     struct StreamData {

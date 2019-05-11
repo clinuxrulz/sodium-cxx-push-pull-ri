@@ -27,7 +27,10 @@ void test_sodium::map() {
 
 void test_sodium::cell_map() {
     sodium::impl::Cell<int> ca(1);
-    auto cb = ca.map([](int a) { return a + 1; });
+    auto cb = ca.map([](int a) { return a + 2; });
+    cb.listen_weak([](int a) {
+        cout << a << endl;
+    });
 }
 
 // Just here for type-checking templates at compile time.
