@@ -10,6 +10,7 @@ class test_sodium : public CppUnit::TestFixture {
     // sodium tests
     CPPUNIT_TEST(map);
     CPPUNIT_TEST(cell_map);
+    CPPUNIT_TEST(cell_lift2);
     CPPUNIT_TEST_SUITE_END();
 
 public:
