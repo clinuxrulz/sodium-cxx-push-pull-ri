@@ -98,7 +98,7 @@ namespace sodium::impl {
                 std::vector<bacon_gc::Node*>(),
                 dependencies,
                 []() {},
-                "Cell::map"
+                "Cell::lift2"
             );
             data2->node = node;
             update();
