@@ -19,6 +19,9 @@ namespace sodium {
     class Lazy {
     public:
 
+        Lazy(const Lazy<A>& lazy): data(lazy.data) {
+        }
+
         template <typename F>
         Lazy(F k) {
             this->data = bacon_gc::Gc<LazyData<A>>(new LazyData<A>());
@@ -31,7 +34,12 @@ namespace sodium {
             this->data->gc_deps = gc_deps;
         }
 
-        A operator()() {
+        Lazy<A>& operator=(const Lazy<A>& lazy) {
+            this->data = lazy.data;
+            return *this;
+        }
+
+        A operator()() const {
             if (!this->data->value_op) {
                 this->data->value_op = (this->data->k)();
             }
@@ -39,7 +47,7 @@ namespace sodium {
         }
 
         template <typename FN>
-        Lazy<typename std::result_of<FN(A)>::type> map(FN f) {
+        Lazy<typename std::result_of<FN(A)>::type> map(FN f) const {
             typedef typename std::result_of<FN(A)>::type B;
             return Lazy<B>([=]() { return f((*this)()); });
         }

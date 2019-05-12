@@ -3,7 +3,6 @@
 
 #include <cppunit/TestCase.h>
 #include <cppunit/extensions/HelperMacros.h>
-#include <sodium/sodium.h>
 #include <string>
 
 class test_sodium : public CppUnit::TestFixture {
@@ -19,6 +18,8 @@ public:
     void map();
 
     void cell_map();
+
+    void cell_lift2();
 
     void lazy_map();
 };

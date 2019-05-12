@@ -73,19 +73,37 @@ namespace sodium::impl {
             return Cell<B>(bacon_gc::Gc<CellData<B>>(data2));
         }
 
-        /* TODO: need to recieve next_value_op.orSome(value) for computing value in update
         template <typename B, typename FN>
         Cell<typename std::result_of<FN(A,B)>::type> lift2(Cell<B> const& cb, FN f) const {
             typedef typename std::result_of<FN(A,B)>::type C;
-            CellData<B> data2 = new CellData<B>(
+            CellData<B>* data2 = new CellData<B>(
                 Node(),
                 this->data->value.lift2(cb.data->value, f),
                 nonstd::nullopt
             );
             auto update = [=]() {
-
+                data2->next_value_op = nonstd::optional<Lazy<C>>(
+                    this->next_value_or_value().lift2(
+                        cb.next_value_or_value(),
+                        f
+                    )
+                );
+                return true;
             };
-        }*/
+            std::vector<Node> dependencies;
+            dependencies.push_back(this->data->node);
+            dependencies.push_back(cb.data->node);
+            Node node = node_new(
+                update,
+                std::vector<bacon_gc::Node*>(),
+                dependencies,
+                []() {},
+                "Cell::map"
+            );
+            data2->node = node;
+            update();
+            return Cell<B>(bacon_gc::Gc<CellData<B>>(data2));
+        }
 
         template <typename FN>
         Listener listen_weak(FN f) const {
@@ -118,6 +136,14 @@ namespace sodium::impl {
             return Listener([=]() mutable {
                 keep_alive_op = nonstd::nullopt;
             });
+        }
+    private:
+        Lazy<A> next_value_or_value() const {
+            if (this->data->next_value_op) {
+                return this->data->next_value_op.value();
+            } else {
+                return this->data->value;
+            }
         }
     };
 
