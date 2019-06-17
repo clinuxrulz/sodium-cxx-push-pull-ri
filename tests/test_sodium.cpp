@@ -3,6 +3,7 @@
 #include <sodium/lazy.h>
 #include <sodium/primitive_trace.h>
 #include <sodium/impl/cell.h>
+#include <sodium/impl/stream.h>
 
 #include <cppunit/ui/text/TestRunner.h>
 #include <stdio.h>
@@ -24,6 +25,11 @@ void test_sodium::map() {
     ssa.send(1);
     ssa.send(2);
     ssa.send(3);
+}
+
+void test_sodium::stream_map() {
+    Stream<int> s;
+    Stream<int> s2 = s.map([](int a) { return a + 1; });
 }
 
 void test_sodium::cell_map() {
