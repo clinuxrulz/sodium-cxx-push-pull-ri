@@ -4,6 +4,7 @@
 #include <sodium/primitive_trace.h>
 #include <sodium/impl/cell.h>
 #include <sodium/impl/stream.h>
+#include <sodium/impl/stream_sink.h>
 
 #include <cppunit/ui/text/TestRunner.h>
 #include <stdio.h>
@@ -28,8 +29,9 @@ void test_sodium::map() {
 }
 
 void test_sodium::stream_map() {
-    Stream<int> s;
-    Stream<int> s2 = s.map([](int a) { return a + 1; });
+    sodium::impl::StreamSink<int> ss;
+    sodium::impl::Stream<int> s = ss.stream();
+    sodium::impl::Stream<int> s2 = s.map([](int a) { return a + 1; });
 }
 
 void test_sodium::cell_map() {

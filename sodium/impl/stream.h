@@ -38,6 +38,7 @@ namespace sodium::impl {
                 ),
                 nonstd::nullopt
             );
+            this->data = bacon_gc::Gc<StreamData<A>>(data2);
         }
 
         template <typename FN>
@@ -66,6 +67,44 @@ namespace sodium::impl {
             data2->node = node;
             update();
             return Stream<B>(bacon_gc::Gc<StreamData<B>>(data2));
+        }
+
+        /*
+        template <typename PRED>
+        Stream<A> filter(PRED pred) const {
+            StreamData<A>* data2 = new StreamData<B>(
+                Node(),
+                nonstd::nullopt
+            );
+            auto update = [=]() {
+                if (this->data->firing_op) {
+                    auto firing = this->data->firing_op.value();
+                }
+                return false;
+            };
+        }*/
+    };
+}
+
+namespace bacon_gc {
+
+    template <typename A>
+    struct Trace<sodium::impl::Stream<A>> {
+        template <typename F>
+        static void trace(const sodium::impl::Stream<A>& a, F&& k) {
+            Trace<bacon_gc::Gc<sodium::LazyData<A>>>::trace(a.data, k);
+        }
+    };
+
+    template <typename A>
+    struct Trace<sodium::impl::StreamData<A>> {
+        template <typename F>
+        static void trace(const sodium::impl::StreamData<A>& a, F&& k) {
+            if (a.firing_op) {
+                sodium::Lazy<A> const& firing = *a.firing_op;
+                Trace<sodium::Lazy<A>>::trace(firing, k);
+            }
+            Trace<sodium::impl::Node>::trace(a.node, k);
         }
     };
 }

@@ -39,6 +39,10 @@ namespace sodium {
             return *this;
         }
 
+        static Lazy<A> pure(A a) {
+            return Lazy([=]() { return a; });
+        }
+
         A operator()() const {
             if (!this->data->value_op) {
                 this->data->value_op = (this->data->k)();
