@@ -31,7 +31,7 @@ void test_sodium::map() {
 void test_sodium::stream_map() {
     sodium::impl::StreamSink<int> ss;
     sodium::impl::Stream<int> s = ss.stream();
-    sodium::impl::Stream<int> s2 = s.map([](int a) { return a + 1; });
+    //sodium::impl::Stream<int> s2 = s.map([](int a) { return a + 1; });
     //s2.listen_weak([](int a) {
     //    cout << a << endl;
     //});

@@ -17,6 +17,21 @@ namespace sodium::impl {
     public:
         Stream<A> _stream;
 
+        StreamSink() {
+            StreamData<A>* data2 = new StreamData<A>(
+                Node(),
+                nonstd::nullopt
+            );
+            Node node = node_new(
+                []() { return false; },
+                std::vector<bacon_gc::Node*>(),
+                std::vector<sodium::impl::Node>(),
+                []() {},
+                "StreamSink"
+            );
+            this->_stream = Stream<A>(data2);
+        }
+
         Stream<A> stream() {
             this->_stream;
         }
