@@ -109,6 +109,7 @@ namespace sodium::impl {
                 []() {},
                 "Stream::listen"
             );
+            return Listener(node);
         }
     };
 }
