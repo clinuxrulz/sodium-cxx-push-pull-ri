@@ -32,23 +32,26 @@ void test_sodium::stream_map() {
     sodium::impl::StreamSink<int> ss;
     sodium::impl::Stream<int> s = ss.stream();
     sodium::impl::Stream<int> s2 = s.map([](int a) { return a + 1; });
+    //s2.listen_weak([](int a) {
+    //    cout << a << endl;
+    //});
 }
 
 void test_sodium::cell_map() {
     sodium::impl::Cell<int> ca(1);
     auto cb = ca.map([](int a) { return a + 2; });
-    cb.listen_weak([](int a) {
-        cout << a << endl;
-    });
+    //cb.listen_weak([](int a) {
+    //    cout << a << endl;
+    //});
 }
 
 void test_sodium::cell_lift2() {
     sodium::impl::Cell<int> ca(1);
     sodium::impl::Cell<int> cb(2);
     sodium::impl::Cell<int> cc = ca.lift2(cb, [](int a, int b) { return a + b; });
-    cc.listen_weak([](int a) {
-        cout << a << endl;
-    });
+    //cc.listen_weak([](int a) {
+    //    cout << a << endl;
+    //});
 }
 
 // Just here for type-checking templates at compile time.

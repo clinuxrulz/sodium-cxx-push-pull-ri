@@ -3,11 +3,11 @@
 
 #include "bacon_gc/gc.h"
 #include "sodium/lazy.h"
-#include "sodium/listener.h"
 #include "sodium/optional.h"
 #include "sodium/optional_util.h"
-#include "sodium/impl/sodium_ctx.h"
+#include "sodium/impl/listener.h"
 #include "sodium/impl/node.h"
+#include "sodium/impl/sodium_ctx.h"
 
 namespace sodium::impl {
     template <typename A>
@@ -89,6 +89,27 @@ namespace sodium::impl {
                 return false;
             };
         }*/
+
+        template <typename CALLBACK>
+        Listener listen_weak(CALLBACK callback) const {
+            auto update = [=]() {
+                if (this->data->firing_op) {
+                    const Lazy<A>& firing = *this->data->firing_op;
+                    callback(firing());
+                    return false;
+                }
+                return false;
+            };
+            std::vector<Node> dependencies;
+            dependencies.push_back(this->data->node);
+            Node node = node_new(
+                update,
+                std::vector<bacon_gc::Node*>(),
+                dependencies,
+                []() {},
+                "Stream::listen"
+            );
+        }
     };
 }
 
