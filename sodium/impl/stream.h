@@ -50,7 +50,13 @@ namespace sodium::impl {
             );
             auto update = [=]() {
                 if (this->data->firing_op) {
-                    data2->firing_op = this->data->firing_op.map([=](A& firing) { return f(firing); });
+                    const Lazy<A>& firing = *this->data->firing_op;
+                    data2->firing_op = nonstd::optional<Lazy<B>>(firing.map(f));
+                    with_sodium_ctx_void([=](SodiumCtx& sodium_ctx) {
+                        sodium_ctx.post([=]() {
+                            data2->firing_op = nonstd::nullopt;
+                        });
+                    });
                     return true;
                 }
                 return false;
