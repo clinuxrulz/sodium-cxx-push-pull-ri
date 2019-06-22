@@ -29,11 +29,12 @@ namespace sodium::impl {
                 []() {},
                 "StreamSink"
             );
+            data2->node = node;
             this->_stream = Stream<A>(data2);
         }
 
         Stream<A> stream() {
-            this->_stream;
+            return this->_stream;
         }
 
         void send(A a) {
@@ -41,7 +42,7 @@ namespace sodium::impl {
                 sodium_ctx.transaction_void([=]() {
                     bool wasFiring = this->_stream->data->firing_op;
                     this->_stream->data->firing_op = nonstd::optional<Lazy<A>>(Lazy<A>::pure(a));
-                    if (wasFiring) {
+                    if (!wasFiring) {
                         sodium_ctx.post([=]() {
                             this->_stream->data->firing_op = nonstd::nullopt;
                         });
