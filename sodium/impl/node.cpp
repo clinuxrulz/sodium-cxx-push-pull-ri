@@ -2,7 +2,7 @@
 
 namespace sodium::impl {
 
-    void _node_ensure_bigger_than2(Node* node, int rank, std::unordered_set<int>* visited) {
+    void _node_ensure_bigger_than2(Node* node, unsigned int rank, std::unordered_set<int>* visited) {
         if (visited->find(node->data->id) != visited->end()) {
             return;
         }
@@ -21,7 +21,7 @@ namespace sodium::impl {
         }
     }
 
-    void node_ensure_bigger_than(Node* node, int rank) {
+    void node_ensure_bigger_than(Node* node, unsigned int rank) {
         with_sodium_ctx_void([](SodiumCtx sodium_ctx) {
             sodium_ctx.schedule_update_sort();
         });

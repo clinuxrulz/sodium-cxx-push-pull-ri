@@ -20,11 +20,11 @@ namespace sodium::impl {
         CLEANUP cleanup,
         std::string desc
     ) {
-        int id = with_sodium_ctx<int>([](SodiumCtx sodium_ctx) {
+        unsigned int id = with_sodium_ctx<unsigned int>([](SodiumCtx sodium_ctx) {
             sodium_ctx.inc_node_count();
             return sodium_ctx.new_id();
         });
-        int rank = 0;
+        unsigned int rank = 0;
         for (auto it = dependencies.begin(); it != dependencies.end(); ++it) {
             auto& dependency = *it;
             if (rank <= dependency.data->rank) {
@@ -80,7 +80,7 @@ namespace sodium::impl {
         node->data->additional_cleanups.push_back(cleanup);
     }
 
-    static void node_ensure_bigger_than(Node* node, int rank);
+    void node_ensure_bigger_than(Node* node, int rank);
 }
 
 #endif // _SODIUM_IMPL_NODE_H_
