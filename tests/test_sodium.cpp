@@ -22,9 +22,12 @@ void test_sodium::stream_map() {
     sodium::impl::StreamSink<int> ss;
     sodium::impl::Stream<int> s = ss.stream();
     sodium::impl::Stream<int> s2 = s.map([](int a) { return a + 1; });
-    //sodium::impl::Listener l = s2.listen_weak([](int a) {
-    //    cout << a << endl;
-    //});
+    sodium::impl::Listener l = s2.listen_weak([](int a) {
+        cout << a << endl;
+    });
+    ss.send(1);
+    ss.send(2);
+    ss.send(3);
 }
 
 void test_sodium::cell_map() {

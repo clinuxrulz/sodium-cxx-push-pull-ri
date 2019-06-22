@@ -39,12 +39,13 @@ namespace sodium::impl {
 
         void send(A a) {
             with_sodium_ctx_void([=](SodiumCtx& sodium_ctx) {
+                SodiumCtx* sodium_ctx2 = &sodium_ctx;
                 sodium_ctx.transaction_void([=]() {
-                    bool wasFiring = this->_stream->data->firing_op;
-                    this->_stream->data->firing_op = nonstd::optional<Lazy<A>>(Lazy<A>::pure(a));
+                    bool wasFiring = this->_stream.data->firing_op;
+                    this->_stream.data->firing_op = nonstd::optional<Lazy<A>>(Lazy<A>::pure(a));
                     if (!wasFiring) {
-                        sodium_ctx.post([=]() {
-                            this->_stream->data->firing_op = nonstd::nullopt;
+                        sodium_ctx2->post([=]() {
+                            this->_stream.data->firing_op = nonstd::nullopt;
                         });
                     }
                 });
