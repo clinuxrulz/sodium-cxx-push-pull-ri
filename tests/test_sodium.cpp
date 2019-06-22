@@ -1,5 +1,4 @@
 #include "test_sodium.h"
-#include <sodium/sodium.h>
 #include <sodium/lazy.h>
 #include <sodium/primitive_trace.h>
 #include <sodium/impl/cell.h>
@@ -19,20 +18,11 @@ void test_sodium::tearDown()
     bacon_gc::collect_cycles();
 }
 
-void test_sodium::map() {
-    StreamSink<int> ssa;
-    Stream<int> sa = ssa.stream();
-    Stream<int> sb = sa.map([](int a) { return a + 1; });
-    ssa.send(1);
-    ssa.send(2);
-    ssa.send(3);
-}
-
 void test_sodium::stream_map() {
     sodium::impl::StreamSink<int> ss;
     sodium::impl::Stream<int> s = ss.stream();
     sodium::impl::Stream<int> s2 = s.map([](int a) { return a + 1; });
-    //s2.listen_weak([](int a) {
+    //sodium::impl::Listener l = s2.listen_weak([](int a) {
     //    cout << a << endl;
     //});
 }
