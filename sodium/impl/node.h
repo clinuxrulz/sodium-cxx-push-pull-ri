@@ -72,7 +72,13 @@ namespace sodium::impl {
         NodeData** tmp = new NodeData*;
         *tmp = node_data;
         _self = std::shared_ptr<NodeData*>(tmp);
-        return { data: bacon_gc::Gc<NodeData>(node_data) };
+        Node result = Node { data: bacon_gc::Gc<NodeData>(node_data) };
+        auto weak_node = WeakNode { data: result.data.downgrade() };
+        for (auto it = dependencies.begin(); it != dependencies.end(); ++it) {
+            auto& dependency = *it;
+            dependency.data->dependents.push_back(weak_node);
+        }
+        return result;
     }
 
     template <typename CLEANUP>

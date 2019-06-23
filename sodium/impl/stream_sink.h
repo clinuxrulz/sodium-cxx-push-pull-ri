@@ -44,6 +44,7 @@ namespace sodium::impl {
                     bool wasFiring = this->_stream.data->firing_op;
                     this->_stream.data->firing_op = nonstd::optional<Lazy<A>>(Lazy<A>::pure(a));
                     if (!wasFiring) {
+                        sodium_ctx2->mark_dependents_dirty(this->_stream.data->node);
                         sodium_ctx2->post([=]() {
                             this->_stream.data->firing_op = nonstd::nullopt;
                         });

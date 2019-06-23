@@ -170,7 +170,25 @@ namespace sodium::impl {
         void schedule_update_sort() {
             this->_resort_required = true;
         }
-        
+
+        void mark_dependents_dirty(sodium::impl::Node& node) {
+            for (auto it = node.data->dependents.begin(); it != node.data->dependents.end(); ++it) {
+                auto weakDependent = *it;
+                auto dependent = weakDependent.data.lock();
+                if (dependent) {
+                    auto dependent2 = Node { data: dependent };
+                    mark_dirty(dependent2);
+                }
+            }
+        }
+
+        void mark_dirty(sodium::impl::Node& node) {
+            if (this->_to_be_updated_set.find(node) == this->_to_be_updated_set.end()) {
+                this->_to_be_updated.push(node);
+                this->_to_be_updated_set.insert(node);
+            }
+        }
+
         void propergate() {
             while (this->_pre_trans.size() != 0) {
                 std::vector<std::function<void()>> pre_trans;
