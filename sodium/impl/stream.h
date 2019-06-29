@@ -42,7 +42,7 @@ namespace sodium::impl {
         }
 
         template <typename FN>
-        Stream<typename std::result_of<FN(A)>::type> map(FN f) const {
+        Stream<typename std::result_of<FN(A)>::type> map(SodiumCtx& sodium_ctx, FN f) const {
             typedef typename std::result_of<FN(A)>::type B;
             StreamData<B>* data2 = new StreamData<B>(
                 Node(),
@@ -59,6 +59,9 @@ namespace sodium::impl {
             auto update = [=](SodiumCtx& sodium_ctx, Node& node) {
                 if (update2()) {
                     sodium_ctx.mark_dependents_dirty(node);
+                    sodium_ctx.post([=]() {
+                        data2->firing_op = nonstd::nullopt;
+                    });
                 }
             };
             std::vector<Node> dependencies;
@@ -71,23 +74,28 @@ namespace sodium::impl {
                 "Stream::map"
             );
             data2->node = node;
-            update2();
+            update(sodium_ctx, node);
             return Stream<B>(bacon_gc::Gc<StreamData<B>>(data2));
         }
 
         /*
         template <typename PRED>
         Stream<A> filter(PRED pred) const {
-            StreamData<A>* data2 = new StreamData<B>(
+            StreamData<A>* data2 = new StreamData<A>(
                 Node(),
                 nonstd::nullopt
             );
-            auto update = [=]() {
+            auto update2 = [=]() {
                 if (this->data->firing_op) {
                     auto firing = this->data->firing_op.value();
+                    if (pred(firing)) {
+                        data2->data->firing_op = this->data->firing_op;
+                        return true;
+                    }
                 }
                 return false;
             };
+
         }*/
 
         template <typename CALLBACK>
