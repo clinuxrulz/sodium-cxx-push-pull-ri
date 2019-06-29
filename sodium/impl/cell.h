@@ -32,7 +32,7 @@ namespace sodium::impl {
         Cell(A value) {
             CellData<A>* data2 = new CellData<A>(
                 node_new(
-                    []() { return false; },
+                    [](SodiumCtx& sodium_ctx, Node& node) {},
                     std::vector<bacon_gc::Node*>(),
                     std::vector<Node>(),
                     []() {},
@@ -52,12 +52,17 @@ namespace sodium::impl {
                 this->data->value.map(f),
                 nonstd::nullopt
             );
-            auto update = [=]() {
+            auto update2 = [=]() {
                 if (this->data->next_value_op) {
                     data2->next_value_op = nonstd::optional<sodium::Lazy<B>>(this->data->next_value_op.value().map(f));
                     return true;
                 }
                 return false;
+            };
+            auto update = [=](SodiumCtx& sodium_ctx, Node& node) {
+                if (update2()) {
+                    sodium_ctx.mark_dependents_dirty(node);
+                }
             };
             std::vector<Node> dependencies;
             dependencies.push_back(this->data->node);
@@ -69,7 +74,7 @@ namespace sodium::impl {
                 "Cell::map"
             );
             data2->node = node;
-            update();
+            update2();
             return Cell<B>(bacon_gc::Gc<CellData<B>>(data2));
         }
 
@@ -81,14 +86,17 @@ namespace sodium::impl {
                 this->data->value.lift2(cb.data->value, f),
                 nonstd::nullopt
             );
-            auto update = [=]() {
+            auto update2 = [=]() {
                 data2->next_value_op = nonstd::optional<Lazy<C>>(
                     this->next_value_or_value().lift2(
                         cb.next_value_or_value(),
                         f
                     )
                 );
-                return true;
+            };
+            auto update = [=](SodiumCtx& sodium_ctx, Node& node) {
+                update2();
+                sodium_ctx.mark_dependents_dirty(node);
             };
             std::vector<Node> dependencies;
             dependencies.push_back(this->data->node);
@@ -101,7 +109,7 @@ namespace sodium::impl {
                 "Cell::lift2"
             );
             data2->node = node;
-            update();
+            update2();
             return Cell<B>(bacon_gc::Gc<CellData<B>>(data2));
         }
 

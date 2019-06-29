@@ -23,7 +23,7 @@ namespace sodium::impl {
                 nonstd::nullopt
             );
             Node node = node_new(
-                []() { return false; },
+                [](SodiumCtx& sodium_ctx, Node& node) {},
                 std::vector<bacon_gc::Node*>(),
                 std::vector<sodium::impl::Node>(),
                 []() {},

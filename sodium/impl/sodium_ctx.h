@@ -12,6 +12,7 @@
 #include "sodium/finally.h"
 
 namespace sodium::impl {
+    class SodiumCtx;
 
     struct NodeData;
 
@@ -26,7 +27,7 @@ namespace sodium::impl {
     struct NodeData {
         unsigned int id;
         unsigned int rank;
-        std::function<bool()> update;
+        std::function<void(SodiumCtx&,Node&)> update;
         std::vector<bacon_gc::Node*> update_dependencies;
         std::vector<Node> dependencies;
         std::vector<WeakNode> dependents;
@@ -212,18 +213,7 @@ namespace sodium::impl {
                 auto node = this->_to_be_updated.top();
                 this->_to_be_updated.pop();
                 this->_to_be_updated_set.erase(node);
-                auto mark_dependents_dirty = node.data->update();
-                if (mark_dependents_dirty) {
-                    for (auto it = node.data->dependents.begin(); it != node.data->dependents.end(); ++it) {
-                        auto weakDependent = *it;
-                        auto dependent = weakDependent.data.lock();
-                        if (dependent) {
-                            auto dependent2 = Node { data: dependent };
-                            this->_to_be_updated.push(dependent2);
-                            this->_to_be_updated_set.insert(dependent2);
-                        }
-                    }
-                }
+                node.data->update(*this, node);
             }
             --this->_transaction_depth;
             while (this->_post_trans.size() != 0) {

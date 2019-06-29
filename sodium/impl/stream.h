@@ -30,7 +30,7 @@ namespace sodium::impl {
         Stream() {
             StreamData<A>* data2 = new StreamData<A>(
                 node_new(
-                    []() { return false; },
+                    [](SodiumCtx& sodium_ctx, Node& node) { return false; },
                     std::vector<bacon_gc::Node*>(),
                     std::vector<Node>(),
                     []() {},
@@ -48,18 +48,18 @@ namespace sodium::impl {
                 Node(),
                 nonstd::nullopt
             );
-            auto update = [=]() {
+            auto update2 = [=]() {
                 if (this->data->firing_op) {
                     const Lazy<A>& firing = *this->data->firing_op;
                     data2->firing_op = nonstd::optional<Lazy<B>>(firing.map(f));
-                    with_sodium_ctx_void([=](SodiumCtx& sodium_ctx) {
-                        sodium_ctx.post([=]() {
-                            data2->firing_op = nonstd::nullopt;
-                        });
-                    });
                     return true;
                 }
                 return false;
+            };
+            auto update = [=](SodiumCtx& sodium_ctx, Node& node) {
+                if (update2()) {
+                    sodium_ctx.mark_dependents_dirty(node);
+                }
             };
             std::vector<Node> dependencies;
             dependencies.push_back(this->data->node);
@@ -71,7 +71,7 @@ namespace sodium::impl {
                 "Stream::map"
             );
             data2->node = node;
-            update();
+            update2();
             return Stream<B>(bacon_gc::Gc<StreamData<B>>(data2));
         }
 
@@ -92,13 +92,11 @@ namespace sodium::impl {
 
         template <typename CALLBACK>
         Listener listen_weak(CALLBACK callback) const {
-            auto update = [=]() {
+            auto update = [=](SodiumCtx& sodium_ctx, Node& node) {
                 if (this->data->firing_op) {
                     const Lazy<A>& firing = *this->data->firing_op;
                     callback(firing());
-                    return false;
                 }
-                return false;
             };
             std::vector<Node> dependencies;
             dependencies.push_back(this->data->node);

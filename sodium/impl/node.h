@@ -31,15 +31,10 @@ namespace sodium::impl {
                 rank = dependency.data->rank + 1;
             }
         }
-        auto update2 = [=]() {
-            with_sodium_ctx_void([](SodiumCtx sodium_ctx) {
-                sodium_ctx.inc_callback_depth();
-            });
-            auto result = update();
-            with_sodium_ctx_void([](SodiumCtx sodium_ctx) {
-                sodium_ctx.dec_callback_depth();
-            });
-            return result;
+        auto update2 = [=](SodiumCtx& sodium_ctx, Node& node2) {
+            sodium_ctx.inc_callback_depth();
+            update(sodium_ctx, node2);
+            sodium_ctx.dec_callback_depth();
         };
         std::shared_ptr<NodeData*> _self;
         auto cleanup2 = [=]() {
@@ -72,13 +67,13 @@ namespace sodium::impl {
         NodeData** tmp = new NodeData*;
         *tmp = node_data;
         _self = std::shared_ptr<NodeData*>(tmp);
-        Node result = Node { data: bacon_gc::Gc<NodeData>(node_data) };
-        auto weak_node = WeakNode { data: result.data.downgrade() };
+        Node node = Node { data : bacon_gc::Gc<NodeData>(node_data) };
+        auto weak_node = WeakNode { data: node.data.downgrade() };
         for (auto it = dependencies.begin(); it != dependencies.end(); ++it) {
             auto& dependency = *it;
             dependency.data->dependents.push_back(weak_node);
         }
-        return result;
+        return node;
     }
 
     template <typename CLEANUP>
