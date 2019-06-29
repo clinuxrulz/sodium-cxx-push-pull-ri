@@ -42,7 +42,7 @@ namespace sodium::impl {
         }
 
         template <typename FN>
-        Stream<typename std::result_of<FN(A)>::type> map(SodiumCtx& sodium_ctx, FN f) const {
+        Stream<typename std::result_of<FN(A)>::type> map(FN f) const {
             typedef typename std::result_of<FN(A)>::type B;
             StreamData<B>* data2 = new StreamData<B>(
                 Node(),
@@ -74,7 +74,7 @@ namespace sodium::impl {
                 "Stream::map"
             );
             data2->node = node;
-            update(sodium_ctx, node);
+            update2();
             return Stream<B>(bacon_gc::Gc<StreamData<B>>(data2));
         }
 
