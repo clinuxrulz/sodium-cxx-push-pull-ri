@@ -45,17 +45,19 @@ void test_sodium::stream_filter() {
 }
 
 void test_sodium::cell_map() {
+    /*
     sodium::impl::Cell<int> ca(1);
-    auto cb = ca.map([](int a) { return a + 2; });
+    auto cb = ca.map([](int a) { return a + 2; });*/
     //cb.listen_weak([](int a) {
     //    cout << a << endl;
     //});
 }
 
 void test_sodium::cell_lift2() {
+    /*
     sodium::impl::Cell<int> ca(1);
     sodium::impl::Cell<int> cb(2);
-    sodium::impl::Cell<int> cc = ca.lift2(cb, [](int a, int b) { return a + b; });
+    sodium::impl::Cell<int> cc = ca.lift2(cb, [](int a, int b) { return a + b; });*/
     //cc.listen_weak([](int a) {
     //    cout << a << endl;
     //});

@@ -8,17 +8,18 @@
 #include "sodium/optional_util.h"
 #include "sodium/impl/sodium_ctx.h"
 #include "sodium/impl/node.h"
+#include "sodium/impl/stream.h"
 
 namespace sodium::impl {
 
     template <typename A>
     struct CellData {
         Node node;
+        sodium::impl::Stream<A> stream;
         sodium::Lazy<A> value;
-        nonstd::optional<sodium::Lazy<A>> next_value_op;
 
-        CellData(Node node, sodium::Lazy<A> value, nonstd::optional<sodium::Lazy<A>> next_value_op)
-        : node(node), value(value), next_value_op(next_value_op) {
+        CellData(Node node, sodium::impl::Stream<A> stream, sodium::Lazy<A> value)
+        : node(node), stream(stream), value(value) {
         }
     };
 
@@ -38,12 +39,13 @@ namespace sodium::impl {
                     []() {},
                     "Cell::pure"
                 ),
-                sodium::Lazy<A>([=]() { return value; }),
-                nonstd::nullopt
+                sodium::impl::Stream<A>(),
+                sodium::Lazy<A>([=]() { return value; })
             );
             this->data = bacon_gc::Gc<CellData<A>>(data2);
         }
 
+        /*
         template <typename FN>
         Cell<typename std::result_of<FN(A)>::type> map(FN f) const {
             typedef typename std::result_of<FN(A)>::type B;
@@ -144,15 +146,7 @@ namespace sodium::impl {
             return Listener([=]() mutable {
                 keep_alive_op = nonstd::nullopt;
             });
-        }
-    private:
-        Lazy<A> next_value_or_value() const {
-            if (this->data->next_value_op) {
-                return this->data->next_value_op.value();
-            } else {
-                return this->data->value;
-            }
-        }
+        }*/
     };
 
 }
@@ -164,11 +158,8 @@ namespace bacon_gc {
         template <typename F>
         static void trace(const sodium::impl::CellData<A>& a, F&& k) {
             Trace<sodium::impl::Node>::trace(a.node, k);
+            Trace<sodium::impl::Stream<A>>::trace(a.stream, k);
             Trace<sodium::Lazy<A>>::trace(a.value, k);
-            if (a.next_value_op) {
-                auto next_value = *a.next_value_op;
-                Trace<sodium::Lazy<A>>::trace(next_value, k);
-            }
         }
     };
 }
