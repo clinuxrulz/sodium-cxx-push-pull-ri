@@ -78,7 +78,6 @@ namespace sodium::impl {
             return Stream<B>(bacon_gc::Gc<StreamData<B>>(data2));
         }
 
-        /*
         template <typename PRED>
         Stream<A> filter(PRED pred) const {
             StreamData<A>* data2 = new StreamData<A>(
@@ -88,15 +87,34 @@ namespace sodium::impl {
             auto update2 = [=]() {
                 if (this->data->firing_op) {
                     auto firing = this->data->firing_op.value();
-                    if (pred(firing)) {
-                        data2->data->firing_op = this->data->firing_op;
+                    if (pred(firing())) {
+                        data2->firing_op = this->data->firing_op;
                         return true;
                     }
                 }
                 return false;
             };
-
-        }*/
+            auto update = [=](SodiumCtx& sodium_ctx, Node& node) {
+                if (update2()) {
+                    sodium_ctx.mark_dependents_dirty(node);
+                    sodium_ctx.post([=]() {
+                        data2->firing_op = nonstd::nullopt;
+                    });
+                }
+            };
+            std::vector<Node> dependencies;
+            dependencies.push_back(this->data->node);
+            Node node = node_new(
+                update,
+                std::vector<bacon_gc::Node*>(),
+                dependencies,
+                []() {},
+                "Stream::filter"
+            );
+            data2->node = node;
+            update2();
+            return Stream<A>(bacon_gc::Gc<StreamData<A>>(data2));
+        }
 
         template <typename CALLBACK>
         Listener listen_weak(CALLBACK callback) const {

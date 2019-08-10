@@ -19,9 +19,23 @@ void test_sodium::tearDown()
 }
 
 void test_sodium::stream_map() {
+    cout << "test_sodium::stream_map" << endl;
     sodium::impl::StreamSink<int> ss;
     sodium::impl::Stream<int> s = ss.stream();
     sodium::impl::Stream<int> s2 = s.map([](int a) { return a + 1; });
+    sodium::impl::Listener l = s2.listen_weak([](int a) {
+        cout << a << endl;
+    });
+    ss.send(1);
+    ss.send(2);
+    ss.send(3);
+}
+
+void test_sodium::stream_filter() {
+    cout << "test_sodium::stream_filter" << endl;
+    sodium::impl::StreamSink<int> ss;
+    sodium::impl::Stream<int> s = ss.stream();
+    sodium::impl::Stream<int> s2 = s.filter([](int a) { return (a & 1) == 0; });
     sodium::impl::Listener l = s2.listen_weak([](int a) {
         cout << a << endl;
     });

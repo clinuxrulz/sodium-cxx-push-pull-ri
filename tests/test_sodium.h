@@ -9,6 +9,7 @@ class test_sodium : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(test_sodium);
     // sodium tests
     CPPUNIT_TEST(stream_map);
+    CPPUNIT_TEST(stream_filter);
     CPPUNIT_TEST(cell_map);
     CPPUNIT_TEST(cell_lift2);
     CPPUNIT_TEST_SUITE_END();
@@ -19,6 +20,8 @@ public:
     void map();
 
     void stream_map();
+
+    void stream_filter();
 
     void cell_map();
 
